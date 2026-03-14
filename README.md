@@ -111,7 +111,12 @@ WHERE {
 LIMIT 25
 ```
 
-## Ontological Analysis #01
+## Ontological Analysis
+
+ - VocabularyとDescriptionの違い
+ - OMLのモデル構成
+ - Vocabularyを使ったクエリー
+
 
 ```SPARQL
 PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
@@ -129,6 +134,260 @@ SELECT DISTINCT* WHERE {
 }
 ORDER BY ?iri
 ```
+
+
+## Ontological Modeling and Analysis 101
+
+ここでは、サザエさんを例に、OMLの`Vocabulary`と`Description`のモデリングを体験します。
+
+### ケーススタディ: 母の母は祖母である
+
+```mermaid
+flowchart TD
+  GrandMother([Person:GrandMother])
+  Mother([Person:Mother])
+  Child([Person:Child])
+  GrandMother -- isMotherOf --> Mother
+  Mother -- isMotherOf --> Child
+  GrandMother -- isGrandMotherOf --> Child
+```
+
+> 
+> Concept
+> 
+> `Person`
+> - サザエさんは人である
+> - フネは人である
+> - タラヲは人である
+
+
+> Relationships
+> 
+> `母である isMotherOf`
+> - フネはサザエの母である
+> - サザエはタラヲの母である
+
+
+> Inference: 
+> 
+>  `母の母は祖母である`
+>  * フネはサザエの母である
+>  * サザエはタラヲの母である
+>  * すなわち、フネはタラヲの祖母である。
+
+```mermaid
+flowchart TD
+  GrandMother[Person:フネ]
+  Mother[Person:サザエ]
+  Child[Person:タラヲ]
+  GrandMother -- isMotherOf --> Mother
+  Mother -- isMotherOf --> Child
+  GrandMother -- isGrandMotherOf --> Child
+```
+
+
+#### Vocabulary
+
+`src/oml/opencaesar.io/example/vocabulary/vocabulary1.oml`を開く。
+
+![](img/20260312211346.png)
+
+
+- 全ての人を表す概念として、`Concept Person`　を定義する。
+- 母であるという関係性を表す`relation entity IsMotherOf` を定義する。
+
+```oml
+concept Person
+
+relation entity IsMotherOf[
+  from Person
+  to Person
+  forward isMotherOf
+  reverse isChildOf
+]
+```
+
+モデルが正しく構築されたかをチェックするため、ビルドする。
+
+```bash
+./gradlew build
+```
+
+エラーが出なければOK。
+
+
+#### Descriptions
+
+次に、定義したVocabularyを使って`Description`を記述します。
+
+`src/oml/opencaesar.io/example/description/description1.oml`を開く。
+
+サザエ、タラヲ、フネを定義する。
+
+```oml
+instance tarao : vocabulary1:Person
+instance sazae : vocabulary1:Person
+instance fune : vocabulary1:Person
+```
+
+#### Query Person
+
+モデルが正しく構築されたかをチェックするため、ビルドし、ロードして、クエリーしてみます。
+
+```bash
+./gradlew load
+```
+
+> [!WARNING]
+> `load`コマンドは、`build`を含んでおり、これだけで`build`+`load`を実行してくれます。
+>
+
+
+Fuseki Web UI上で下記のクエリを実行します。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+}
+ORDER BY ?iri
+```
+
+下記のような結果が得られます。
+
+![](img/20260312215245.png)
+
+
+#### Relationの追加
+
+`src/oml/opencaesar.io/example/description/description1.oml`を開く。
+下記のDescriptionを追加します。
+
+```oml
+instance tarao : vocabulary1:Person
+instance sazae : vocabulary1:Person[
+  vocabulary1:isMotherOf tarao
+]
+instance fune : vocabulary1:Person[
+  vocabulary1:isMotherOf sazae
+]
+```
+
+モデルが正しく構築されたかをチェックするため、ビルドし、ロードして、クエリーしてみます。
+
+```bash
+./gradlew load
+```
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  		vocabulary1:isMotherOf ?child
+}
+ORDER BY ?iri
+```
+
+下記のように、子どもが得られます。
+
+![](img/20260312215541.png)
+
+#### Reverse Relationship
+
+ここで、OMLのVocabularyを確認してみる。
+
+```oml
+relation entity IsMotherOf[
+  from Person
+  to Person
+  forward isMotherOf
+  reverse isChildOf
+]
+```
+
+定義したVocabularyでは、`Person` Node間の関係性に、`forward` と `reverse`の２種類の関係性を付与しています。
+
+```mermaid
+flowchart LR
+  Mother((Person))
+  Child((Person))
+  Mother -- isMotherOf --> Child
+  Child -- isChildOf --> Mother 
+```
+
+すなわち、SPARQLで下記のように記述することができる。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  		vocabulary1:isChildOf ?child
+}
+ORDER BY ?iri
+```
+
+#### 特定のinstanceを起点としたクエリ
+
+OWL/RDF のグラフデータは、世界の知識をすべて「主語–述語–目的語」の３つ組 (triple) = グラフ構造で表します。それぞれ、ノードとノード間の関係性を表しし、IRI（Internationalized Resource Identifier）と呼ばれる「世界中で一意のリソースを識別するための文字列」 が割り当てられています。IRIは、OWL/RDFにおいて、クラス・個体・プロパティなど すべての概念を一意に識別するための基礎になります。
+
+例えば、サザエさんを表す`instance sazae`には、
+
+```
+http://opencaesar.io/example/description/description1#sazae
+```
+
+というIRIが割り当てられています。
+これを使ったSPARQLクエリを記述してみます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  <http://opencaesar.io/example/description/description1#sazae> vocabulary1:isChildOf ?mother.
+}
+ORDER BY ?iri
+```
+
+`サザエは誰の子供であるか？`がわかります。
+
+次に、`reverse`関係を使ってみます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  <http://opencaesar.io/example/description/description1#sazae> vocabulary1:isMotherOf ?child.
+}
+ORDER BY ?iri
+```
+
+`サザエの子は誰か？`がわかります。
+こんな書き方もできます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  <http://opencaesar.io/example/description/description1#sazae> vocabulary1:isChildOf ?mother.
+  <http://opencaesar.io/example/description/description1#sazae> vocabulary1:isMotherOf ?child.
+}
+ORDER BY ?iri
+```
+
+### Inference
+
+ここで、`祖母`を定義します。
+ある`Person`の`母親の母親`は`祖母である`という関係性を定義します。
+
+```mermaid
+flowchart LR
+  GrandMother((Person))
+  Mother((Person))
+  Child((Person))
+  GrandMother -- isMotherOf --> Mother
+  Mother -- isMotherOf --> Child
+  GrandMother -- isGrandMotherOf --> Child
+```
+
+
+
 
 ## Clone
 

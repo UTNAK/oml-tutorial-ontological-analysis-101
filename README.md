@@ -20,7 +20,30 @@ flowchart LR
     Reason --> Build
 ```
 
-## Repositoryをクローンする。
+## Github Codespaceで実行する場合
+
+右上の緑色の`code`をクリックし、`Create codespac on main` をクリック。
+これだけて必要なOML開発環境がクラウド上で構築され、VSCODEをブラウザ上で開くことができます。
+
+![](img/2026-03-14-10-08-53.png)
+
+しばらくすると下記のような画面になります
+
+![](img/2026-03-14-10-10-45.png)
+
+
+ローカル環境を構築する前のクイックウォークスルーとして活用頂けます。
+
+
+## Local環境の構築方法
+
+- cloneしてdevcontainerとしてもよい
+- java環境構築
+
+
+## Local環境で実行する場合
+
+### Repositoryをクローンする。
 
 ```
 git clone https://github.com/UTNAK/oml-tutorial-ontological-analysis-101.git

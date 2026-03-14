@@ -1,0 +1,24 @@
+{
+  "template-tree": {
+    "name": "Objective Tree",
+    "diagrams": {
+      "all-rows": "objective-tree"
+    },
+    "queries": {
+      "query01": "objective-tree-query01.sparql",
+      "query02": "objective-tree-query02.sparql"
+    },
+    "rowMapping": {
+      "id": "query01",
+      "name": "Objective ID",
+      "labelFormat": "{id}",
+          "subRowMappings": [
+            {
+              "id": "query02",
+              "name": "Objective Description",
+              "labelFormat": "{label}"
+            }
+          ] 
+    }
+  }
+}

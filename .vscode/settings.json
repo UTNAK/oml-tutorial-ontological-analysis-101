@@ -1,0 +1,7 @@
+{
+    "files.exclude": {
+        "gradle*": false
+    },
+    "pasteImage.basePath": "${currentFileDir}",
+    "pasteImage.path": "${currentFileDir}/img"
+}

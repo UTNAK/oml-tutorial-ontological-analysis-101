@@ -1,0 +1,19 @@
+{
+  "template-table": {
+    "name": "Objectives",
+    "diagrams": {
+      "all-rows": "objectives-diagram"
+    },
+    "columnNames": {
+      "label": "Objective"
+    },
+    "queries": {
+      "query01": "objective-tree-query01.sparql"
+    },
+    "rowMapping": {
+      "id": "query01",
+      "name": "id",
+      "labelFormat": "{id}"
+    }
+  }
+}

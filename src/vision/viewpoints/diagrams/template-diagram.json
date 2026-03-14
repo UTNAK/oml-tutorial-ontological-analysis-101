@@ -1,0 +1,29 @@
+{
+"template-diagram": {
+  "name": "template-diagram",
+  "queries": {
+    "node": "diagram_nodes.sparql",
+    "edge": "diagram_edges.sparql"
+  },
+  "rowMapping": {
+    "id": "node",
+    "name": "Parent",
+    "labelFormat": "{id} {name}",
+    "nodeColor": "Dodger Blue",
+    "nodeTextColor": "white",
+    "nodeType": "{type}",
+    "edgeMatchKey": "iri"
+  },
+  "edges": [
+    {
+      "id": "edge",
+      "name": "Edge",
+      "animated": true,
+      "labelFormat": "{type}",
+      "legendItems": "{type}",
+      "sourceKey": "iri",
+      "targetKey": "childiri"
+    }
+  ]
+}
+}

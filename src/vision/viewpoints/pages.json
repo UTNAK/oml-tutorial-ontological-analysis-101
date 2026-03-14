@@ -1,0 +1,34 @@
+[
+  {
+    "title": "Home",
+    "path": "/",
+    "type": "home"
+  },
+  {
+    "title": "Template",
+    "type": "group",
+    "iconUrl": "https://raw.githubusercontent.com/nasa-jpl/stellar/32694a2d2c102426ab42c97089d1cdebe10100bd/icons/utility_wrench.svg",
+    "children": [
+      {
+        "title": "Diagram Pattern",
+        "type": "diagram",
+        "path": "template-diagram"
+      },
+      {
+        "title": "Table Pattern",
+        "type": "table",
+        "path": "template-table"
+      },
+      {
+        "title": "Tree Pattern",
+        "type": "tree",
+        "path": "template-tree"
+      },
+      {
+        "title": "IBD Pattern",
+        "type": "diagram",
+        "path": "ibd"
+      }
+    ]
+  }
+]

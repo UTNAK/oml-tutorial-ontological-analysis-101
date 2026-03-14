@@ -1,0 +1,20 @@
+{
+  "name": "OML Dev Container",
+  "image": "ghcr.io/utnak/oml-dev:latest",
+  // "image": "mcr.microsoft.com/devcontainers/java:21", // Java 21ベースの公式イメージ
+  // "features": {
+  //   "ghcr.io/devcontainers/features/java:1": {
+  //     "version": "21"
+  //   }
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "REditorSupport.r",
+        "quarto.quarto"
+      ]
+    }
+  },
+  "postCreateCommand": "sh -c 'chmod +x .devcontainer/install_vsix.sh'"
+  // This doesnt work, using task.json
+//  "postCreateCommand": "sh -c 'code --install-extension .devcontainer/oml-luxor-2.13.0.vsix && code --install-extension .devcontainer/oml-vision-0.3.0.vsix'"
+}

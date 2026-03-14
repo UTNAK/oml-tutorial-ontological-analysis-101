@@ -409,6 +409,240 @@ flowchart LR
   GrandMother -- isGrandMotherOf --> Child
 ```
 
+まず、`isGrandMotherOf`をVocabularyに追加する。
+
+```oml
+relation entity IsGrandMotherOf[
+  from Person
+  to Person
+  forward isGrandMotherOf
+  reverse isGrandChildOf
+]
+```
+
+#### 手動での関係性定義
+
+次に、funeとtaraを`isGrandMotherOf`で結ぶ
+description1.omlのtaraoに以下を追加する。
+
+```oml
+	instance tarao : vocabulary1:Person[
+		vocabulary1:isGrandChildOf fune
+	]
+```
+
+クエリーできるか確認する。
+
+```bash
+./gradlew load
+```
+
+fuseki web UI上で以下のクエリを実行する。
+
+```sparql
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  	vocabulary1:isMotherOf ?child;
+  	vocabulary1:isGrandMotherOf ?grandchild.
+}
+ORDER BY ?iri
+```
+
+確かに関係性が追加されている。
+
+
+#### 推論を活用した関係性定義
+
+先程追加したtaraoとfuneの関係性を一旦コメントアウトする。
+
+```oml
+	instance tarao : vocabulary1:Person[
+		// vocabulary1:isGrandChildOf fune
+	]
+```
+
+クエリーできるか確認する。
+
+```bash
+./gradlew load
+```
+
+fuseki web UI上で以下のクエリを実行する。
+
+```sparql
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  	vocabulary1:isMotherOf ?child;
+  	vocabulary1:isGrandMotherOf ?grandchild.
+}
+ORDER BY ?iri
+```
+
+`isGrandMotherOf`の関係性がないので、何も表示されない。
+
+
+次に、推論ルールとして
+
+> ある`Person`の`母親の母親`は`祖母である`
+
+という関係性を定義します。
+
+```oml
+  rule infer-grand-mom [
+		isMotherOf(a, b) & isMotherOf(b, c) -> isGrandMotherOf(a, c)
+	]
+```
+
+この推論ルールは、下記のノード間の関係性をもとに、新たな関係性を付与します。
+手動で定義した矢印`isMotherOf`をもとに、新しい矢印`isGrandMotherOf`を機械（Reasonerと言います）が付与してくれます。
+
+
+```mermaid
+flowchart LR
+  GrandMother((Person))
+  Mother((Person))
+  Child((Person))
+  GrandMother -- isMotherOf --> Mother
+  Mother -- isMotherOf --> Child
+  GrandMother -- isGrandMotherOf --> Child
+```
+
+確かに推論されているかをクエリーで確認する。
+
+```bash
+./gradlew load
+```
+
+fuseki web UI上で以下のクエリを実行する。
+
+```sparql
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  	vocabulary1:isMotherOf ?child;
+  	vocabulary1:isGrandMotherOf ?grandchild.
+}
+ORDER BY ?iri
+```
+
+> [!CAUTION]
+> 正しいクエリ結果が出てこない場合は、以下を確認してください。
+> - `./gradlew load`のし忘れ
+> - 更新した`*.oml`の保存し忘れ。CTRL+Sで保存してからloadしてください。
+> 
+
+以上のように、推論ルールを活用すると、ナレッジグラフ上のすべての矢印を人間が手動で定義する必要がなく、機械の力を使って新たな知識を追加することができます。
+
+
+### Query Optional
+
+> OPTIONALを使ったクエリーの紹介
+
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  OPTIONAL{
+	  ?iri vocabulary1:isMotherOf ?child;
+	       vocabulary1:isGrandMotherOf ?grandchild.
+  }
+}
+ORDER BY ?iri
+```
+
+さらに下記のようにすると、グラフの階層構造を明示的に示すことができます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Person;
+  OPTIONAL{
+    ?iri vocabulary1:isMotherOf ?child.
+  }
+  OPTIONAL{
+    ?iri vocabulary1:isGrandMotherOf ?grandchild.
+  }
+}
+ORDER BY ?iri
+```
+
+### Domain Specific Vocabularyの定義: concept Mother, concept GrandMother, concep Child
+
+ここでは、家族構造をナレッジグラフで取り扱うVocabularyを追加します。
+
+`Person`はすべての人を表す概念`=Concept`でした。
+一方で、ドメイン特有の概念として、`Mother`, `GrandMother`, `Child`を使いたい場合があります。
+
+`Vocabulary`
+
+```oml
+	concept Mother < Person[
+		restricts isMotherOf to min 1 Person
+	]
+```
+
+> `restricts isMotherOf to min 1 Person`　は、Motherは少なくとも１人の母親であることという制約（ルール）をノードに付与しています。
+
+例えば下記のようにsazaeとtaraの関係性をコメントアウトしてloadしてみてください。
+
+```oml
+	instance sazae : vocabulary1:Mother[
+		// vocabulary1:isMotherOf tarao
+	]
+```
+
+`BUILD FAILED`となります。
+
+![](img/2026-03-14-11-57-25.png)
+
+terminal上の下記メッセージの`Check /****/.reasoning.xml for more details.`をクリックします。
+
+```bash
+* What went wrong:
+Execution failed for task ':reason'.
+> Ontology is inconsistent. Check /Users/oml/Workspaces/github/oml-tutorial-ontological-analysis-101/build/logs/example/reasoning.xml for more details.
+```
+
+`reasoning.xml`は、OWL2 DL Reasonerを使って、構築したモデルの一貫性をチェックした結果をレポートします。
+いわゆる`Model Validation`の実行結果であり、大きく分けて2つの一貫性をチェックしています。
+
+1. Vocabularyが正しく構築されているか？
+2. Vocabularyに対して、Descriptionが正しく構築されているか？
+
+![](img/2026-03-14-11-59-07.png)
+
+
+この例では、
+
+> "Individual violates minimum cardinality restriction"><![CDATA[
+Individual violates minimum cardinality restriction
+
+となっており、`restriction`として定義した`少なくとも1つのisMotherOf`をもつ制約を`sazae`が違反していることを検出しました。
+
+
+
+> [!WARNING]
+> OMLにおけるルールにはいくつかの種類があることの説明が欲しい
+> * restricts: ノードに制約を付与
+> * from-to : 矢印の根元と行き先に制約
+> * DL Flag: 矢印の方向性に制約
+> 
+
+
+
+
+`Description`
+
+```oml
+	instance sazae : vocabulary1:Mother[
+		// vocabulary1:isMotherOf tarao
+	]
+```
+
+
 
 
 

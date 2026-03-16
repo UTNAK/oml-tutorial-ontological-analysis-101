@@ -656,6 +656,144 @@ Individual violates minimum cardinality restriction
 ```
 
 
+### Domain Specific Vocabularyの定義 その２
+
+次に、`GrandMother`を追加します。
+
+```oml
+	concept GrandMother < Mother, Person
+```
+
+`GrandMother`かつ`Mother`であるが、必ずしも`Mother`が`GrandMother`ではない場合もあります。
+
+このため、
+
+```oml
+	concept Mother < Person[
+		restricts isMotherOf to min 1 Person
+	]
+	concept GrandMother < Mother, Person
+```
+
+としています。
+また、これらは、`isMotherOf`の関係性から自動付与することにします。
+以下の2つのルールを追加します。
+
+```oml
+	rule infer-mother [
+		isMotherOf(a, b) -> Mother(a)
+	]
+	rule infer-grand-mother [
+		isMotherOf(a, b) & isMotherOf(b, c) -> GrandMother(a)
+	]
+```
+
+`description1.oml`を下記に変更します。
+sazae, fune, taraoはいずれも`Person`として、推論で`Mother`と`GrandMother`をラベリングします。
+
+```oml
+	instance tarao : vocabulary1:Person[
+		// vocabulary1:isGrandChildOf fune
+	]
+	instance sazae : vocabulary1:Person[
+		vocabulary1:isMotherOf tarao
+	]
+	instance fune : vocabulary1:Person[
+		vocabulary1:isMotherOf sazae
+	]
+```
+
+確かに推論されているかをクエリーで確認する。
+
+```bash
+./gradlew load
+```
+
+以下のSPARQLクエリーを実行します。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Mother;
+}
+ORDER BY ?iri
+```
+
+`fune`と`sazae`が得られます。
+
+`vocabulary1:Mother`を`vocabulary1:GrandMother`としてみます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:GrandMother;
+}
+ORDER BY ?iri
+```
+
+`fune` が得られます。
+
+
+次に`Child`も追加します。
+
+```oml
+	concept Child < Person
+
+	concept Mother < Child, Person[
+		restricts isMotherOf to min 1 Person
+	]
+	concept GrandMother < Mother, Person
+
+	rule infer-child [
+		isMotherOf(a, b) -> Child(b)
+	]	
+```
+
+確かに推論されているかをクエリーで確認する。
+
+```bash
+./gradlew load
+```
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+SELECT DISTINCT* WHERE {
+  ?iri a vocabulary1:Child;
+}
+ORDER BY ?iri
+```
+
+
+
+少し複雑ですが、こんなクエリも使えます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+
+SELECT DISTINCT ?iri ?type
+WHERE {
+  VALUES ?componentType { vocabulary1:Person  }
+  VALUES ?isMother { vocabulary1:Mother  }
+  VALUES ?isGrandMother { vocabulary1:GrandMother  }
+  VALUES ?isChild { vocabulary1:Child  }
+  
+  ?iri a ?componentType.
+  OPTIONAL {
+    ?iri a ?type .
+    FILTER(?type = ?isGrandMother)
+  }
+  OPTIONAL {
+    ?iri a ?type .
+    FILTER(?type = ?isMother)
+  }
+  OPTIONAL {
+    ?iri a ?type .
+    FILTER(?type = ?isChild)
+  } 
+}
+ORDER BY ?iri
+
+```
 
 
 

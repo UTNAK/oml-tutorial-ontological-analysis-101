@@ -5,20 +5,20 @@ vocabulary <http://opencaesar.io/example/vocabulary/vocabulary1#> as vocabulary1
 	
 	extends <http://purl.org/dc/elements/1.1/> as dc
 	
-	// Example aspect
-	aspect A
+	// // Example aspect
+	// aspect A
 
-	// Example concept
-	concept C < A
+	// // Example concept
+	// concept C < A
 
-	// Example relation entity
-	relation entity R [
-		from C
-		to A
-		forward r
-	]
+	// // Example relation entity
+	// relation entity R [
+	// 	from C
+	// 	to A
+	// 	forward r
+	// ]
 
-	concept Person
+	aspect Person
 
 	relation entity IsMotherOf[
 		from Person
@@ -38,7 +38,21 @@ vocabulary <http://opencaesar.io/example/vocabulary/vocabulary1#> as vocabulary1
 		isMotherOf(a, b) & isMotherOf(b, c) -> isGrandMotherOf(a, c)
 	]
 
-	concept Mother < Person[
+	concept Child < Person
+
+	concept Mother < Child, Person[
 		restricts isMotherOf to min 1 Person
+	]
+	concept GrandMother < Mother, Person
+
+
+	rule infer-mother [
+		isMotherOf(a, b) -> Mother(a)
+	]
+	rule infer-child [
+		isMotherOf(a, b) -> Child(b)
+	]	
+	rule infer-grand-mother[
+		isMotherOf(a, b) & isMotherOf(b, c) -> GrandMother(a)
 	]
 }

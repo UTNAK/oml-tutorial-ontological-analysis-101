@@ -21,10 +21,10 @@ description <http://opencaesar.io/example/description/description1#> as descript
 	instance tarao : vocabulary1:Person[
 		// vocabulary1:isGrandChildOf fune
 	]
-	instance sazae : vocabulary1:Mother[
+	instance sazae : vocabulary1:Person[
 		vocabulary1:isMotherOf tarao
 	]
-	instance fune : vocabulary1:Mother[
+	instance fune : vocabulary1:Person[
 		vocabulary1:isMotherOf sazae
 	]
 

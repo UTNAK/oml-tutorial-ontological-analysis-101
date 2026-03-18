@@ -22,7 +22,7 @@ flowchart LR
 
 ## Github Codespaceで実行する場合
 
-右上の緑色の`code`をクリックし、`Create codespac on main` をクリック。
+右上の緑色の`code`をクリックし、`Create codespace on main` をクリック。
 これだけて必要なOML開発環境がクラウド上で構築され、VSCODEをブラウザ上で開くことができます。
 
 ![](img/2026-03-14-10-08-53.png)
@@ -794,6 +794,99 @@ WHERE {
 ORDER BY ?iri
 
 ```
+
+### DL FLAG
+
+`description1.oml`を下記に変更します。
+
+
+```oml
+	instance sazae : vocabulary1:Person[
+		vocabulary1:isMotherOf sazae
+	]
+```
+
+```bash
+./gradlew load
+```
+
+クエリーしてみます。
+
+```SPARQL
+PREFIX vocabulary1: <http://opencaesar.io/example/vocabulary/vocabulary1#>
+
+SELECT DISTINCT*
+WHERE {
+  ?iri a vocabulary1:Person;
+  		vocabulary1:isMotherOf ?iri2.
+}
+ORDER BY ?iri
+```
+> [!WARNING]
+> `sazae` `isMotherOf` `sazae`
+> `Person`サザエはサザエの母であるというのは、Vocabularyとしては問題ありませんが、`意味的にはおかしい`。
+
+```oml
+	relation entity IsMotherOf[
+		from Person
+		to Person
+		forward isMotherOf
+		reverse isChildOf
+		irreflexive
+	]
+```
+
+こんな時は、[DL FLAG](https://www.opencaesar.io/oml/#RelationEntity-LR)を活用することで、ノードに制約を付与することができます。
+
+例えば、`irreflexive` Flagは、自分自身に矢印が戻ってきてはいけないという制約を与えます。
+
+> `irreflexive`
+> The irreflexive flag implies that a source instance cannot be related to itself.
+
+![](img/2026-03-18-20-17-31.png)
+
+`vocabulary1.oml`を更新します。
+
+```oml
+	relation entity IsGrandMotherOf[
+		from Person
+		to Person
+		forward isGrandMotherOf
+		reverse isGrandChildOf
+		irreflexive
+	]
+```
+
+```bash
+./gradlew load
+```
+
+下記のように、Build failedとなります。
+
+```bash
+(base) oml@oml oml-tutorial-ontological-analysis-101 % ./gradlew load
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :oml2owl
+1 oml file(s) have changed
+3 owl file(s) are saved
+1 rules file(s) are saved
+
+> Task :reason FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':reason'.
+> Ontology is inconsistent. Check /Users/oml/Workspaces/github/oml-tutorial-ontological-analysis-101/build/logs/example/reasoning.xml for more details.
+```
+
+
+
+
+
+## -------------------------------------
 
 
 

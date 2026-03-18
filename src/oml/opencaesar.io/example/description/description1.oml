@@ -22,7 +22,7 @@ description <http://opencaesar.io/example/description/description1#> as descript
 		// vocabulary1:isGrandChildOf fune
 	]
 	instance sazae : vocabulary1:Person[
-		vocabulary1:isMotherOf tarao
+		vocabulary1:isMotherOf sazae
 	]
 	instance fune : vocabulary1:Person[
 		vocabulary1:isMotherOf sazae

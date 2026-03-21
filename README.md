@@ -848,14 +848,16 @@ ORDER BY ?iri
 `vocabulary1.oml`を更新します。
 
 ```oml
-	relation entity IsGrandMotherOf[
+	relation entity IsMotherOf[
 		from Person
 		to Person
-		forward isGrandMotherOf
-		reverse isGrandChildOf
+		forward isMotherOf
+		reverse isChildOf
 		irreflexive
 	]
 ```
+
+ビルドします。
 
 ```bash
 ./gradlew load
@@ -882,7 +884,12 @@ Execution failed for task ':reason'.
 > Ontology is inconsistent. Check /Users/oml/Workspaces/github/oml-tutorial-ontological-analysis-101/build/logs/example/reasoning.xml for more details.
 ```
 
+`reasoning.xml`を開くと、下記のように`irreflexive`制約に違反していることがわかります。
 
+```xml
+      <failure message="Irreflexive property FunInv(isMotherOf)"><![CDATA[
+Irreflexive property FunInv(isMotherOf)
+```
 
 
 
